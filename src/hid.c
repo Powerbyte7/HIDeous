@@ -225,7 +225,7 @@ int main(void) {
                     .bEndpointAddress = USB_DEVICE_TO_HOST | 1,
                     .bmAttributes = USB_INTERRUPT_TRANSFER,
                     .wMaxPacketSize = 0x0008,
-                    .bInterval = 10,
+                    .bInterval = 1,
                 },
             },
         },

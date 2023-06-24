@@ -166,10 +166,14 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
 }
 
 
-int main(void) { 
-    
+int main(void) {
+    static const usb_string_descriptor_t product_name = {
+        .bLength = sizeof(product_name),
+        .bDescriptorType = USB_STRING_DESCRIPTOR,
+        .bString = L"Hello, World!",
+    };
 
-    static const usb_string_descriptor_t *strings[] = { /* TODO: Add custom strings here */ };
+    static const usb_string_descriptor_t *strings[] = { &product_name };
     static const usb_string_descriptor_t langids = {
         .bLength = sizeof(langids),
         .bDescriptorType = USB_STRING_DESCRIPTOR,
@@ -242,9 +246,9 @@ int main(void) {
         .bDeviceSubClass = 0,
         .bDeviceProtocol = 0,
         .bMaxPacketSize0 = 0x40,
-        .idVendor = 0x0451,
-        .idProduct = 0xE008,
-        .bcdDevice = 0x0220,
+        .idVendor = 0x3f0,
+        .idProduct = 0x24,
+        .bcdDevice = 0x0300,
         .iManufacturer = 0,
         .iProduct = 0,
         .iSerialNumber = 0,

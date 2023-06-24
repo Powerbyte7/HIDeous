@@ -22,6 +22,10 @@ static usb_error_t set_configuration(usb_device_t device, uint8_t index) {
     return error;
 }
 
+static uint8_t debug_counter = 0;
+
+static usb_device_t active_device;
+
 static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
                                   usb_callback_data_t *callback_data) {
     static const usb_control_setup_t check_idle_request = {
@@ -33,42 +37,12 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
     };
 
     static const hid_report_request_t check_hid_report_request = {
-        .bmRequestType = USB_DEVICE_TO_HOST | USB_STANDARD_REQUEST | USB_RECIPIENT_INTERFACE, // 0x81
+        .bmRequestType = 0x81, // USB_DEVICE_TO_HOST | USB_STANDARD_REQUEST | USB_RECIPIENT_INTERFACE, 
         .bDescriptorIndex = 0x0, 
         .bDescriptorType = 0x22, // HID report
         .wDescriptorLength = 63,
     };
-    
-    usb_error_t error = USB_SUCCESS;
-    switch ((unsigned)event) {
-        case USB_DEVICE_CONNECTED_EVENT: {
-            usb_device_t device = event_data;
-            if ((usb_GetRole() & USB_ROLE_DEVICE) == USB_ROLE_DEVICE)
-                break;
-            if (error == USB_SUCCESS)
-                error = usb_ResetDevice(device);
-            break;
-        }
-        case USB_DEVICE_ENABLED_EVENT: {
-            size_t transferred;
-            usb_device_t device = event_data;
-            if (error == USB_SUCCESS)
-                error = set_configuration(device, 0);
-            break;
-        }
-        case USB_DEFAULT_SETUP_EVENT: {
-            const usb_control_setup_t *setup = event_data;
-            if (error == USB_SUCCESS && !memcmp(setup, &check_idle_request, sizeof(check_idle_request))) {
-                printf("IDLE");
-                error = USB_IGNORE;
-            }
-        }
-    }     
-    return error;               
-}
 
-
-int main(void) { 
     static const uint8_t hid_report_descriptor[63] = {
         5, 0x1,      // USAGE_PAGE (Generic Desktop)
         9, 0x6,      // USAGE (Keyboard)
@@ -103,6 +77,66 @@ int main(void) {
         0x81, 0x0,   //   INPUT (Data,Ary,Abs)
         0x0C0        // END_COLLECTION
     };
+
+    static const uint8_t hid_report_check[8] = {
+        0x81,
+        0x6,
+        0x0,
+        0x22,
+        0x0,
+        0x0,
+        0x63
+    };
+    
+    usb_error_t error = USB_SUCCESS;
+
+    active_device = usb_FindDevice(NULL, active_device, USB_SKIP_HUBS);
+
+    static const usb_control_setup_t transfer_setup = {
+        .bmRequestType = 0,
+        .bRequest = 0,
+        .wValue = 0,
+        .wIndex = 0,
+        .wLength = 0,
+    };
+
+    switch ((unsigned)event) {
+        case USB_DEFAULT_SETUP_EVENT: {
+            const usb_control_setup_t *setup = event_data;
+            const uint8_t *hid2 = event_data;
+            const hid_report_request_t *hid = event_data;
+            if (hid2[0] == 0x81) {
+                error = USB_IGNORE;
+                printf("DEVICE:%02X", active_device);
+
+                error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), hid_report_descriptor, 63, NULL, NULL);
+                printf("ERROR:%d", error);
+                //usb_ScheduleDefaultControlTransfer(device, &transfer_setup, hid_report_descriptor, NULL, NULL);
+            } else if (hid2[0] == 0x21) {
+                error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), NULL, 0, NULL, NULL);
+            }
+
+            // if (!memcmp(hid2, &hid_report_check, sizeof(hid_report_check))) {
+            //     printf("HID1");
+            //     error = USB_SUCCESS;
+            // } else if (!memcmp(hid, &check_hid_report_request, sizeof(check_hid_report_request))) {
+            //     printf("HID2");
+            //     error = USB_SUCCESS;
+            // } else if (!memcmp(hid, &check_hid_report_request, 4)) {
+            //     printf("HID3");
+            //     error = USB_SUCCESS;
+            // }
+            printf("%d:%02X ",debug_counter, hid2[0]);
+            debug_counter++;
+
+        }
+    }     
+    return error;               
+}
+
+
+int main(void) { 
+    
 
     static const usb_string_descriptor_t *strings[] = { /* TODO: Add custom strings here */ };
     static const usb_string_descriptor_t langids = {
@@ -152,7 +186,7 @@ int main(void) {
                 .bCountryCode = 0,
                 .bNumDescriptors = 1,
                 .bDescriptorType2 = 34,
-                .wDescriptorLength = 0, // sizeof(hid_report_descriptor)
+                .wDescriptorLength = 63, // sizeof(hid_report_descriptor)
             },
             .endpoints = {
                 [0] = {
@@ -195,10 +229,33 @@ int main(void) {
 
     os_SetCursorPos(1, 0);
 
+    static const usb_control_setup_t interrupt_setup = {
+        .bmRequestType = 0,
+        .bRequest = 0,
+        .wValue = 0,
+        .wIndex = 0,
+        .wLength = 0,
+    };
+
+    static const uint8_t input_data[8] = {
+        0, // Modifier key
+        0, // Reserved
+        KEY_A, // First input
+        0,
+        0,
+        0,
+        0,
+        0
+    };
+
+
+
     usb_error_t error;
     if ((error = usb_Init(handleUsbEvent, NULL, &standard,
                           USB_DEFAULT_INIT_FLAGS)) == USB_SUCCESS) {
         printf("Success!\n");
+
+        //usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x02), input_data, 8, NULL, NULL);
 
         while (!os_GetCSC()) {
             usb_HandleEvents();

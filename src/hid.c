@@ -6,6 +6,7 @@
 #include <keypadc.h>
 
 #include "hid.h"
+#include "usb_hid_keys.h"
 
 #define DEFAULT_LANGID 0x0409
 

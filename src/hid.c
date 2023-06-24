@@ -27,20 +27,6 @@ uint8_t get_single_key_pressed(void) {
     return only_key;
 }
 
-static usb_error_t set_configuration(usb_device_t device, uint8_t index) {
-    usb_error_t error = USB_SUCCESS;
-    size_t length = usb_GetConfigurationDescriptorTotalLength(device, index), transferred;
-    usb_configuration_descriptor_t *descriptor = malloc(length);
-    if (error == USB_SUCCESS && !descriptor)
-        error = USB_ERROR_NO_MEMORY;
-    if (error == USB_SUCCESS)
-        error = usb_GetConfigurationDescriptor(device, index, descriptor, length, &transferred);
-    if (error == USB_SUCCESS)
-        error = usb_SetConfiguration(device, descriptor, transferred);
-    free(descriptor);
-    return error;
-}
-
 static const uint8_t map[] = {
     [sk_Up    ] = KEY_UP,
     [sk_Down  ] = KEY_DOWN,

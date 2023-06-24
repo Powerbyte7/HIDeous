@@ -23,6 +23,21 @@ static usb_error_t set_configuration(usb_device_t device, uint8_t index) {
 
 static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
                                   usb_callback_data_t *callback_data) {
+    static const usb_control_setup_t check_idle_request = {
+        .bmRequestType = USB_HOST_TO_DEVICE | USB_VENDOR_REQUEST | USB_RECIPIENT_INTERFACE, // 0x21
+        .bRequest = 0x0a, // Set idle
+        .wValue = 0,
+        .wIndex = 0,
+        .wLength = 0,
+    };
+
+    static const hid_report_request_t check_hid_report_request = {
+        .bmRequestType = USB_DEVICE_TO_HOST | USB_STANDARD_REQUEST | USB_RECIPIENT_INTERFACE, // 0x81
+        .bDescriptorIndex = 0x0, 
+        .bDescriptorType = 0x22, // HID report
+        .wDescriptorLength = 63,
+    };
+    
     usb_error_t error = USB_SUCCESS;
     switch ((unsigned)event) {
         case USB_DEVICE_CONNECTED_EVENT: {
@@ -54,6 +69,41 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
 
 
 int main(void) { 
+    static const uint8_t hid_report_descriptor[63] = {
+        5, 0x1,      // USAGE_PAGE (Generic Desktop)
+        9, 0x6,      // USAGE (Keyboard)
+        0x0A1, 0x1,  // COLLECTION (Application)
+        0x5, 7,      //   USAGE_PAGE (Keyboard)
+        0x19, 0x0E0, //   USAGE_MINIMUM (Keyboard LeftControl)
+        0x29, 0x0E7, //   USAGE_MAXIMUM (Keyboard Right GUI)
+        0x15, 0x0,   //   LOGICAL_MINIMUM (0)
+        0x25, 0x1,   //   LOGICAL_MAXIMUM (1)
+        0x75, 0x1,   //   REPORT_SIZE (1)
+        0x95, 0x8,   //   REPORT_COUNT (8)
+        0x81, 0x2,   //   INPUT (Data,Var,Abs)
+        0x95, 0x1,   //   REPORT_COUNT (1)
+        0x75, 0x8,   //   REPORT_SIZE (8)
+        0x81, 0x3,   //   INPUT (Cnst,Var,Abs) 81 03
+        0x95, 0x5,   //   REPORT_COUNT (5)
+        0x75, 0x1,   //   REPORT_SIZE (1)
+        0x5, 0x8,    //   USAGE_PAGE (LEDs)
+        0x19, 0x1,   //   USAGE_MINIMUM (Num Lock)
+        0x29, 0x5,   //   USAGE_MAXIMUM (Kana)
+        0x91, 0x2,   //   OUTPUT (Data,Var,Abs)
+        0x95, 0x1,   //   REPORT_COUNT (1)
+        0x75, 0x3,   //   REPORT_SIZE (3)
+        0x91, 0x3,   //   OUTPUT (Cnst,Var,Abs) 91 03
+        0x95, 0x6,   //   REPORT_COUNT (6)
+        0x75, 0x8,   //   REPORT_SIZE (8)
+        0x15, 0x0,   //   LOGICAL_MINIMUM (0)
+        0x25, 0x65,  //   LOGICAL_MAXIMUM (101)
+        0x5, 0x7,    //   USAGE_PAGE (Keyboard)
+        0x19, 0x0,   //   USAGE_MINIMUM (Reserved (no event indicated))
+        0x29, 0x65,  //   USAGE_MAXIMUM (Keyboard Application)
+        0x81, 0x0,   //   INPUT (Data,Ary,Abs)
+        0x0C0        // END_COLLECTION
+    };
+
     static const usb_string_descriptor_t *strings[] = { /* TODO: Add custom strings here */ };
     static const usb_string_descriptor_t langids = {
         .bLength = sizeof(langids),
@@ -102,7 +152,7 @@ int main(void) {
                 .bCountryCode = 0,
                 .bNumDescriptors = 1,
                 .bDescriptorType2 = 34,
-                .wDescriptorLength = 0,
+                .wDescriptorLength = 0, // sizeof(hid_report_descriptor)
             },
             .endpoints = {
                 [0] = {

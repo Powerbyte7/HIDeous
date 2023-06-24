@@ -13,6 +13,13 @@ typedef struct hid_descriptor {
     uint16_t wDescriptorLength;  // Length of HID class descriptor
 } hid_descriptor_t;
 
+typedef struct hid_report_request {
+    uint8_t bmRequestType;
+    uint8_t bDescriptorIndex;
+    uint8_t bDescriptorType;
+    uint8_t wDescriptorLength;
+} hid_report_request_t;
+
 typedef enum keyboard_key {
     KEY_NULL = 0,
     KEY_A = 4,

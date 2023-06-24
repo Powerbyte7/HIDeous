@@ -55,14 +55,6 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
                 error = set_configuration(device, 0);
             break;
         }
-        case USB_DEVICE_CONTROL_INTERRUPT:
-            printf("Control!\n");
-            // Handle requests such as 'Set Idle' or 'Get Idle'
-            break;
-        case USB_DEVICE_INTERRUPT:
-            printf("Interrupt!\n");
-            // Host is asking device for input, send it using usb_ScheduleInterruptTransfer
-            break;
     }     
     return USB_SUCCESS;               
 }

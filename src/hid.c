@@ -41,6 +41,52 @@ static usb_error_t set_configuration(usb_device_t device, uint8_t index) {
     return error;
 }
 
+static const uint8_t map[] = {
+    [sk_Up    ] = KEY_UP,
+    [sk_Down  ] = KEY_DOWN,
+    [sk_Left  ] = KEY_LEFT,
+    [sk_Right ] = KEY_RIGHT,
+    [sk_Del   ] = KEY_BACKSPACE,
+    [sk_Mode  ] = KEY_CAPSLOCK,
+    [sk_Clear ] = KEY_NONE,
+    [sk_Math  ] = KEY_A,
+    [sk_Apps  ] = KEY_B,
+    [sk_Prgm  ] = KEY_C,
+    [sk_Recip ] = KEY_D,
+    [sk_Sin   ] = KEY_E,
+    [sk_Cos   ] = KEY_F,
+    [sk_Tan   ] = KEY_G,
+    [sk_Power ] = KEY_H,
+    [sk_Square] = KEY_I,
+    [sk_Comma ] = KEY_J,
+    [sk_LParen] = KEY_K,
+    [sk_RParen] = KEY_L,
+    [sk_Div   ] = KEY_M,
+    [sk_Log   ] = KEY_N,
+    [sk_7     ] = KEY_O,
+    [sk_8     ] = KEY_P,
+    [sk_9     ] = KEY_Q,
+    [sk_Mul   ] = KEY_R,
+    [sk_Ln    ] = KEY_S,
+    [sk_4     ] = KEY_T,
+    [sk_5     ] = KEY_U,
+    [sk_6     ] = KEY_V,
+    [sk_Sub   ] = KEY_W,
+    [sk_Store ] = KEY_X,
+    [sk_1     ] = KEY_Y,
+    [sk_2     ] = KEY_Z,
+    [sk_3     ] = KEY_LEFTMETA,
+    [sk_Add   ] = KEY_APOSTROPHE,
+    [sk_0     ] = KEY_SPACE,
+    [sk_DecPnt] = KEY_SEMICOLON,
+    [sk_Chs   ] = KEY_SLASH,
+    [sk_Enter ] = KEY_ENTER,
+};
+
+// static get_key() {
+//     //static const uint8_t keys = 
+// }
+
 static uint8_t debug_counter = 0;
 static uint8_t capslock = 0;
 
@@ -62,7 +108,7 @@ static usb_error_t key_callback(usb_endpoint_t pEndpoint, usb_transfer_status_t 
     usb_error_t error;
     error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &empty_input_data, 8, NULL, NULL);
 
-    printf("IntERR:%d ",error);
+    return error;
 }
 
 static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
@@ -262,10 +308,10 @@ int main(void) {
         .strings = strings,
     };
 
-    static const uint8_t input_data[8] = {
+    static uint8_t input_data[8] = {
         0, // Modifier key
         0, // Reserved
-        KEY_A, // First input
+        KEY_LEFTMETA, // First input
         0,
         0,
         0,
@@ -288,13 +334,18 @@ int main(void) {
                 
             }
 
+            
+
             uint8_t key = get_single_key_pressed();
             printf("Key: %d ",key);
+
+            uint8_t hid_key = map[key];
 
             if (key == 15) {
                 break;
             }
 
+            input_data[2] = hid_key;
             error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &input_data, 8, key_callback, NULL);
             printf("T1: %d ",error);
         }

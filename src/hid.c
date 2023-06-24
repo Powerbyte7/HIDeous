@@ -292,7 +292,7 @@ int main(void) {
     static uint8_t input_data[8] = {
         0, // Modifier key
         0, // Reserved
-        KEY_LEFTMETA, // First input
+        0, // First input
         0,
         0,
         0,

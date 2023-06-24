@@ -69,10 +69,6 @@ static const uint8_t map[] = {
     [sk_Enter ] = KEY_ENTER,
 };
 
-// static get_key() {
-//     //static const uint8_t keys = 
-// }
-
 static uint8_t debug_counter = 0;
 static uint8_t capslock = 0;
 
@@ -182,7 +178,6 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
                 error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), hid_report_descriptor, 63, key_callback, NULL);
                 printf("REP_ERROR:%d ", error);
                 error = USB_IGNORE;
-                //usb_ScheduleDefaultControlTransfer(device, &transfer_setup, hid_report_descriptor, NULL, NULL);
             } else if (hid2[0] == 0x21) {\
                 error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), NULL, 0, NULL, NULL);
                 printf("SET_ERROR:%d ", error);
@@ -278,8 +273,8 @@ int main(void) {
         .bDeviceSubClass = 0,
         .bDeviceProtocol = 0,
         .bMaxPacketSize0 = 0x40,
-        .idVendor = 0x3f0,
-        .idProduct = 0x24,
+        .idVendor = 0x3f0, // HP, Inc
+        .idProduct = 0x24, // KU-0316
         .bcdDevice = 0x0300,
         .iManufacturer = 0,
         .iProduct = 0,
@@ -313,14 +308,10 @@ int main(void) {
         printf("Success!\n");
 
         while(1) {
-            //usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x02), input_data, 8, NULL, NULL);
-
             while (!os_GetCSC()) {
                 usb_HandleEvents();
                 
             }
-
-            
 
             uint8_t key = get_single_key_pressed();
             printf("Key: %d ",key);

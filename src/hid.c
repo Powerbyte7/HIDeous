@@ -146,7 +146,7 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
             if (hid2[0] == 0x81) {
                 printf("DEVICE:%02X ", active_device);
 
-                error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), hid_report_descriptor, 63, NULL, NULL);
+                error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), hid_report_descriptor, 63, key_callback, NULL);
                 printf("REP_ERROR:%d ", error);
                 error = USB_IGNORE;
                 //usb_ScheduleDefaultControlTransfer(device, &transfer_setup, hid_report_descriptor, NULL, NULL);

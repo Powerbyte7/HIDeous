@@ -2,9 +2,9 @@
 # Makefile Options
 # ----------------------------
 
-NAME = HID4
+NAME = HIDeous
 ICON = icon.png
-DESCRIPTION = "HID emulator"
+DESCRIPTION = "HID keyboard emulator"
 COMPRESSED = NO
 ARCHIVED = NO
 

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <tice.h>
+#include <string.h>
 
 #include "hid.h"
 
@@ -55,8 +56,15 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
                 error = set_configuration(device, 0);
             break;
         }
+        case USB_DEFAULT_SETUP_EVENT: {
+            const usb_control_setup_t *setup = event_data;
+            if (error == USB_SUCCESS && !memcmp(setup, &check_idle_request, sizeof(check_idle_request))) {
+                printf("IDLE");
+                error = USB_IGNORE;
+            }
+        }
     }     
-    return USB_SUCCESS;               
+    return error;               
 }
 
 

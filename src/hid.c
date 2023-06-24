@@ -26,6 +26,41 @@ static uint8_t debug_counter = 0;
 
 static usb_device_t active_device;
 
+static usb_error_t interrupt_callback(usb_endpoint_t pEndpoint, usb_transfer_status_t status, size_t size, uint8_t state) {
+    static const uint8_t input_data[8] = {
+        0, // Modifier key
+        0, // Reserved
+        KEY_A, // First input
+        0,
+        0,
+        0,
+        0,
+        0
+    };
+
+    static const uint8_t empty_input_data[8] = {
+        0, // Modifier key
+        0, // Reserved
+        0, // First input
+        0,
+        0,
+        0,
+        0,
+        0
+    };
+
+    usb_error_t error;
+
+    if (state == 1) {
+        error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &empty_input_data, 8, interrupt_callback, 2);
+    } else if (state == 2) {
+        error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &input_data, 8, interrupt_callback, 1);
+    }
+    
+
+    printf("IntERR:%d ",error);
+}
+
 static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
                                   usb_callback_data_t *callback_data) {
     static const usb_control_setup_t check_idle_request = {
@@ -90,7 +125,7 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
     
     usb_error_t error = USB_SUCCESS;
 
-    active_device = usb_FindDevice(NULL, active_device, USB_SKIP_HUBS);
+    active_device = usb_FindDevice(NULL, NULL, USB_SKIP_HUBS);
 
     static const usb_control_setup_t transfer_setup = {
         .bmRequestType = 0,
@@ -107,13 +142,15 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
             const hid_report_request_t *hid = event_data;
             if (hid2[0] == 0x81) {
                 error = USB_IGNORE;
-                printf("DEVICE:%02X", active_device);
+                printf("DEVICE:%02X ", active_device);
 
-                error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), hid_report_descriptor, 63, NULL, NULL);
-                printf("ERROR:%d", error);
+                error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), hid_report_descriptor, 63, (usb_transfer_callback_t) interrupt_callback, 2);
+                printf("REP_ERROR:%d ", error);
                 //usb_ScheduleDefaultControlTransfer(device, &transfer_setup, hid_report_descriptor, NULL, NULL);
             } else if (hid2[0] == 0x21) {
+                error = USB_IGNORE;
                 error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), NULL, 0, NULL, NULL);
+                printf("SET_ERROR:%d ", error);
             }
 
             // if (!memcmp(hid2, &hid_report_check, sizeof(hid_report_check))) {
@@ -195,7 +232,7 @@ int main(void) {
                     .bEndpointAddress = USB_DEVICE_TO_HOST | 1,
                     .bmAttributes = USB_INTERRUPT_TRANSFER,
                     .wMaxPacketSize = 0x0008,
-                    .bInterval = 255,
+                    .bInterval = 10,
                 },
             },
         },
@@ -236,19 +273,6 @@ int main(void) {
         .wIndex = 0,
         .wLength = 0,
     };
-
-    static const uint8_t input_data[8] = {
-        0, // Modifier key
-        0, // Reserved
-        KEY_A, // First input
-        0,
-        0,
-        0,
-        0,
-        0
-    };
-
-
 
     usb_error_t error;
     if ((error = usb_Init(handleUsbEvent, NULL, &standard,

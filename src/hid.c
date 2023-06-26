@@ -51,6 +51,48 @@ static const uint8_t map[] = {
     [sk_Enter ] = KEY_ENTER,
 };
 
+static const uint8_t special_map[] = {
+    [sk_Up    ] = KEY_VOLUMEUP,
+    [sk_Down  ] = KEY_VOLUMEDOWN,
+    [sk_Left  ] = KEY_MEDIA_BACK,
+    [sk_Right ] = KEY_MEDIA_FORWARD,
+    [sk_Del   ] = KEY_BACKSPACE,
+    [sk_Mode  ] = KEY_CAPSLOCK,
+    [sk_Clear ] = KEY_NONE,
+    [sk_Math  ] = KEY_A,
+    [sk_Apps  ] = KEY_B,
+    [sk_Prgm  ] = KEY_C,
+    [sk_Recip ] = KEY_D,
+    [sk_Sin   ] = KEY_E,
+    [sk_Cos   ] = KEY_F,
+    [sk_Tan   ] = KEY_G,
+    [sk_Power ] = KEY_H,
+    [sk_Square] = KEY_I,
+    [sk_Comma ] = KEY_J,
+    [sk_LParen] = KEY_KPLEFTPAREN,
+    [sk_RParen] = KEY_KPRIGHTPAREN,
+    [sk_Div   ] = KEY_M,
+    [sk_Log   ] = KEY_N,
+    [sk_7     ] = KEY_7,
+    [sk_8     ] = KEY_8,
+    [sk_9     ] = KEY_9,
+    [sk_Mul   ] = KEY_KPASTERISK,
+    [sk_Ln    ] = KEY_S,
+    [sk_4     ] = KEY_4,
+    [sk_5     ] = KEY_5,
+    [sk_6     ] = KEY_6,
+    [sk_Sub   ] = KEY_KPMINUS,
+    [sk_Store ] = KEY_X,
+    [sk_1     ] = KEY_1,
+    [sk_2     ] = KEY_2,
+    [sk_3     ] = KEY_3,
+    [sk_Add   ] = KEY_KPPLUS,
+    [sk_0     ] = KEY_0,
+    [sk_DecPnt] = KEY_SEMICOLON,
+    [sk_Chs   ] = KEY_SLASH,
+    [sk_Enter ] = KEY_ENTER,
+};
+
 static uint8_t debug_counter = 0;
 static uint8_t capslock = 0;
 
@@ -284,7 +326,9 @@ int main(void) {
 
     os_SetCursorPos(1, 0);
 
+    bool special_mode = false;
     uint8_t key;
+
     usb_error_t error;
     if ((error = usb_Init(handleUsbEvent, NULL, &standard,
                           USB_DEFAULT_INIT_FLAGS)) == USB_SUCCESS) {
@@ -297,11 +341,20 @@ int main(void) {
 
             printf("Key: %d ",key);
 
-            uint8_t hid_key = map[key];
-
-            if (key == 15) {
+            if (key == sk_Clear) {
                 break;
             }
+
+            switch (key) {
+                case sk_2nd:
+                    input_data[0] = input_data[0] ^ SHIFT_BIT;
+                    continue;
+                case sk_Alpha:
+                    special_mode = !special_mode;
+                    continue;
+            }
+
+            uint8_t hid_key = special_mode ? special_map[key] : map[key];
 
             input_data[2] = hid_key;
             error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &input_data, 8, key_callback, NULL);

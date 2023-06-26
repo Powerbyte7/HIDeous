@@ -3,6 +3,11 @@ extern "C"
 {
 #endif
 
+#define CTRL_BIT 0x01
+#define SHIFT_BIT 0x02
+#define ALT_BIT 0x04
+#define GUI_BIT 0x08
+
 typedef struct hid_descriptor {
     uint8_t  bLength;
     uint8_t  bDescriptorType;       // HID descriptor type 0x21

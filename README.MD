@@ -9,3 +9,8 @@ This program turns the Ti-84 CE into a working keyboard by emulating a HID devic
 
 ## Usage
 Once you run the program the green keys will corrospond to the keyboard input. Press clear twice to exit the program.
+
+<p align="center">
+    <img src="https://raw.githubusercontent.com/Powerbyte7/HIDeous/master/keyguide.svg?sanitize=true"
+        height="600">
+</p>

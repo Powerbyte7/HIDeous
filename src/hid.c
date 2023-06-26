@@ -15,7 +15,6 @@ static const uint8_t map[] = {
     [sk_Left  ] = KEY_LEFT,
     [sk_Right ] = KEY_RIGHT,
     [sk_Del   ] = KEY_BACKSPACE,
-    [sk_Mode  ] = KEY_CAPSLOCK,
     [sk_Clear ] = KEY_NONE,
     [sk_Math  ] = KEY_A,
     [sk_Apps  ] = KEY_B,
@@ -43,12 +42,13 @@ static const uint8_t map[] = {
     [sk_Store ] = KEY_X,
     [sk_1     ] = KEY_Y,
     [sk_2     ] = KEY_Z,
-    [sk_3     ] = KEY_LEFTMETA,
+    [sk_3     ] = KEY_CAPSLOCK,
     [sk_Add   ] = KEY_APOSTROPHE,
     [sk_0     ] = KEY_SPACE,
     [sk_DecPnt] = KEY_SEMICOLON,
     [sk_Chs   ] = KEY_SLASH,
     [sk_Enter ] = KEY_ENTER,
+    [sk_Stat  ] = KEY_TAB,
 };
 
 static const uint8_t special_map[] = {
@@ -57,7 +57,6 @@ static const uint8_t special_map[] = {
     [sk_Left  ] = KEY_MEDIA_BACK,
     [sk_Right ] = KEY_MEDIA_FORWARD,
     [sk_Del   ] = KEY_BACKSPACE,
-    [sk_Mode  ] = KEY_CAPSLOCK,
     [sk_Clear ] = KEY_NONE,
     [sk_Math  ] = KEY_A,
     [sk_Apps  ] = KEY_B,
@@ -68,7 +67,7 @@ static const uint8_t special_map[] = {
     [sk_Tan   ] = KEY_G,
     [sk_Power ] = KEY_H,
     [sk_Square] = KEY_I,
-    [sk_Comma ] = KEY_J,
+    [sk_Comma ] = KEY_COMMA,
     [sk_LParen] = KEY_KPLEFTPAREN,
     [sk_RParen] = KEY_KPRIGHTPAREN,
     [sk_Div   ] = KEY_M,
@@ -81,16 +80,18 @@ static const uint8_t special_map[] = {
     [sk_4     ] = KEY_4,
     [sk_5     ] = KEY_5,
     [sk_6     ] = KEY_6,
-    [sk_Sub   ] = KEY_KPMINUS,
+    [sk_Sub   ] = KEY_MINUS,
     [sk_Store ] = KEY_X,
     [sk_1     ] = KEY_1,
     [sk_2     ] = KEY_2,
     [sk_3     ] = KEY_3,
-    [sk_Add   ] = KEY_KPPLUS,
+    [sk_Add   ] = KEY_EQUAL,
     [sk_0     ] = KEY_0,
     [sk_DecPnt] = KEY_SEMICOLON,
     [sk_Chs   ] = KEY_SLASH,
     [sk_Enter ] = KEY_ENTER,
+    [sk_Stat  ] = KEY_TAB,
+    [sk_Vars  ] = KEY_LEFTMETA,
 };
 
 static uint8_t debug_counter = 0;
@@ -339,6 +340,10 @@ int main(void) {
                 usb_HandleEvents();
             }
 
+            // The GUI key is only used as a key
+            // The modifier should be cleared after a keypress.
+            input_data[0] = input_data[0] & ~GUI_BIT;
+
             printf("Key: %d ",key);
 
             if (key == sk_Clear) {
@@ -350,6 +355,15 @@ int main(void) {
                     input_data[0] = input_data[0] ^ SHIFT_BIT;
                     continue;
                 case sk_Alpha:
+                    input_data[0] = input_data[0] ^ CTRL_BIT;
+                    continue;
+                case sk_GraphVar:
+                    input_data[0] = input_data[0] ^ ALT_BIT;
+                    continue;
+                case sk_Vars:
+                    input_data[0] = input_data[0] | GUI_BIT;
+                    break;
+                case sk_Mode:
                     special_mode = !special_mode;
                     continue;
             }

@@ -3,29 +3,11 @@
 #include <stdlib.h>
 #include <tice.h>
 #include <string.h>
-#include <keypadc.h>
 
 #include "hid.h"
 #include "usb_hid_keys.h"
 
 #define DEFAULT_LANGID 0x0409
-
-uint8_t get_single_key_pressed(void) {
-    uint8_t only_key = 0;
-    kb_Scan();
-    for (uint8_t key = 1, group = 7; group; --group) {
-        for (uint8_t mask = 1; mask; mask <<= 1, ++key) {
-            if (kb_Data[group] & mask) {
-                if (only_key) {
-                    return 0;
-                } else {
-                    only_key = key;
-                }
-            }
-        }
-    }
-    return only_key;
-}
 
 static const uint8_t map[] = {
     [sk_Up    ] = KEY_UP,
@@ -302,18 +284,17 @@ int main(void) {
 
     os_SetCursorPos(1, 0);
 
+    uint8_t key;
     usb_error_t error;
     if ((error = usb_Init(handleUsbEvent, NULL, &standard,
                           USB_DEFAULT_INIT_FLAGS)) == USB_SUCCESS) {
         printf("Success!\n");
 
         while(1) {
-            while (!os_GetCSC()) {
+            while (!(key = os_GetCSC())) {
                 usb_HandleEvents();
-                
             }
 
-            uint8_t key = get_single_key_pressed();
             printf("Key: %d ",key);
 
             uint8_t hid_key = map[key];

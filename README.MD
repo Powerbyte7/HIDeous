@@ -13,3 +13,12 @@ This program turns the Ti-84 CE into a working keyboard by emulating a HID devic
     <img src="https://raw.githubusercontent.com/Powerbyte7/HIDeous/master/keyguide.svg?sanitize=true"
         width="800">
 </p>
+
+## Changing the key layout
+
+To change the key layout you'll need to compile HIDeous yourself. Don't worry, it's a fairly straightfoward process. 
+
+1. [Install the CE toolchain](https://ce-programming.github.io/toolchain/static/getting-started.html)
+2. Download the [source code](https://github.com/Powerbyte7/HIDeous/archive/refs/heads/master.zip)
+3. In hid.c, change the keycodes in the map[] and/or special_map[] arrays. You can find the keycodes in usb_hid_keys.h
+4. Build the program and send the resulting 8xp file to your calculator.

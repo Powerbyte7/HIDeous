@@ -94,9 +94,6 @@ static const uint8_t special_map[] = {
     [sk_Vars  ] = KEY_LEFTMETA,
 };
 
-static uint8_t debug_counter = 0;
-static uint8_t capslock = 0;
-
 static usb_device_t active_device;
 
 static usb_error_t key_callback(usb_endpoint_t pEndpoint, usb_transfer_status_t status, size_t size, uint8_t state) {
@@ -208,9 +205,6 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
                 printf("SET_ERROR:%d ", error);
                 error = USB_IGNORE;
             }
-            
-            printf("%d:%02X ",debug_counter, hid2[0]);
-            debug_counter++;
 
         }
     }     

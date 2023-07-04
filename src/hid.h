@@ -3,10 +3,14 @@ extern "C"
 {
 #endif
 
-#define CTRL_BIT 0x01
+#define CTRL_BIT  0x01
 #define SHIFT_BIT 0x02
-#define ALT_BIT 0x04
-#define GUI_BIT 0x08
+#define ALT_BIT   0x04
+#define GUI_BIT   0x08
+
+#define MACRO_END 0xFF
+
+#define ROLLOVER_ERR 0x01
 
 typedef struct hid_descriptor {
     uint8_t  bLength;

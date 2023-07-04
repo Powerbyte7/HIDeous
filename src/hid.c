@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <tice.h>
 #include <string.h>
+#include <keypadc.h>
 
 #include "hid.h"
 #include "usb_hid_keys.h"
@@ -94,25 +95,61 @@ static const uint8_t special_map[] = {
     [sk_Vars  ] = KEY_LEFTMETA,
 };
 
+// Adds keys to the 8-byte HID input_data
+static uint8_t add_key(uint8_t key, uint8_t input_data[]) {
+    // Toggle for normal/special characters
+    static bool special_mode;
+
+    // Sets the modifier bits in the first byte of input_data
+    switch (key) {
+        case sk_2nd:
+            input_data[0] = input_data[0] | SHIFT_BIT;
+            return 0;
+        case sk_Alpha:
+            input_data[0] = input_data[0] | CTRL_BIT;
+            return 0;
+        case sk_GraphVar:
+            input_data[0] = input_data[0] | ALT_BIT;
+            return 0;
+        case sk_Vars:
+            input_data[0] = input_data[0] | GUI_BIT;
+            break; // Doesn't return because GUI key needs to be set as byte too
+        case sk_Mode:
+            special_mode = !special_mode;
+            return 0;
+    }
+
+    // GSC key conversion to HID key
+    uint8_t hid_key;
+    if (!special_mode) {
+        hid_key = key < sizeof(map) / sizeof(*map) ? map[key] : KEY_NONE;
+    } else {
+        hid_key = key < sizeof(special_map) / sizeof(*special_map) ? special_map[key] : KEY_NONE;
+    }
+    
+    printf("K%d",hid_key);
+
+    // Adds keys to last 6 bytes in input_data
+    for (int i = 2; i <= 7; i++) {
+        uint8_t prev_key = input_data[i];
+        if (prev_key == KEY_NONE) {
+            input_data[i] = hid_key;
+            return 0;
+        }
+    }
+
+    // No space in array left, send overflow packet
+    // Happens when more than 6 keys are pressed at once
+    return ROLLOVER_ERR; 
+}
+
 static usb_device_t active_device;
 
 static usb_error_t key_callback(usb_endpoint_t pEndpoint, usb_transfer_status_t status, size_t size, uint8_t state) {
 
-    static const uint8_t empty_input_data[8] = {
-        0, // Modifier key
-        0, // Reserved
-        0, // First input
-        0,
-        0,
-        0,
-        0,
-        0
-    };
+    // Empty for the time being
 
-    usb_error_t error;
-    error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &empty_input_data, 8, NULL, NULL);
-
-    return error;
+    return USB_SUCCESS;
 }
 
 static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
@@ -308,6 +345,7 @@ int main(void) {
         .strings = strings,
     };
 
+    // This array will be populated with the HID input data
     static uint8_t input_data[8] = {
         0, // Modifier key
         0, // Reserved
@@ -319,10 +357,22 @@ int main(void) {
         0
     };
 
+    // This data is sent when too many keys are pressed at once
+    static uint8_t roll_over_data[8] = {
+        0, // Modifier key
+        0, // Reserved
+        KEY_ERR_OVF, // First input
+        KEY_ERR_OVF,
+        KEY_ERR_OVF,
+        KEY_ERR_OVF,
+        KEY_ERR_OVF,
+        KEY_ERR_OVF
+    };
+
     os_SetCursorPos(1, 0);
 
-    bool special_mode = false;
-    uint8_t key;
+    // Copy of kb_Data to compare for changes
+    uint8_t last_kb_Data[8] = {1,1,1,1,1,1,1,1};
 
     usb_error_t error;
     if ((error = usb_Init(handleUsbEvent, NULL, &standard,
@@ -330,46 +380,71 @@ int main(void) {
         printf("Success!\n");
 
         while(1) {
-            while (!(key = os_GetCSC())) {
-                usb_HandleEvents();
+            // Handle events
+            usb_HandleEvents();
+
+            // Update keypadc state (kb_Data)
+            kb_Scan();
+
+            uint8_t input_changed = 0;
+
+            // Determine whether input has changed
+            for (uint8_t i = 0; i <= 7; i++) {
+                if (last_kb_Data[i] != kb_Data[i]) {
+                    input_changed = 1;
+                    break;
+                }
             }
 
-            // The GUI key is only used as a key
-            // The modifier should be cleared after a keypress.
-            input_data[0] = input_data[0] & ~GUI_BIT;
+            // Don't do anything if no keys are updated
+            if (!input_changed) {
+                continue;
+            }
 
-            printf("Key: %d ",key);
+            // Clear input array
+            memset(&input_data, KEY_NONE, 8);
+            
+            uint8_t exit = 0; // To exit if clear is pressed
+            uint8_t rollover_err; // To determine if too many keys are pressed at once
 
-            if (key == sk_Clear) {
+            // Converts keypadc data into GetGSC codes
+            // Then adds them to input_data array
+            for (uint8_t key = 1, group = 7; group; --group) {
+                for (uint8_t mask = 1; mask; mask <<= 1, ++key) {
+                    if (kb_Data[group] & mask) {
+                        
+                        if (key == sk_Clear) {
+                            exit = 1;
+                        }
+                        // Add key
+                        rollover_err = add_key(key, &input_data[0]);
+                    }
+                }
+            }
+
+            // Exit if clear is pressed
+            if (exit) {
                 break;
             }
 
-            switch (key) {
-                case sk_2nd:
-                    input_data[0] = input_data[0] ^ SHIFT_BIT;
-                    continue;
-                case sk_Alpha:
-                    input_data[0] = input_data[0] ^ CTRL_BIT;
-                    continue;
-                case sk_GraphVar:
-                    input_data[0] = input_data[0] ^ ALT_BIT;
-                    continue;
-                case sk_Vars:
-                    input_data[0] = input_data[0] | GUI_BIT;
-                    break;
-                case sk_Mode:
-                    special_mode = !special_mode;
-                    continue;
+            // Update previous input state
+            for (uint8_t i = 0; i <= 7; i++) {
+                last_kb_Data[i] = kb_Data[i];
             }
 
-            uint8_t hid_key = special_mode ? special_map[key] : map[key];
+            // Send rollover data instead of normal data to host
+            // If more than 6 keys are pressed at once
+            if (rollover_err) {
+                error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &roll_over_data, 8, key_callback, NULL);
+                continue;
+            }
 
-            input_data[2] = hid_key;
+            // Send input data to host
             error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &input_data, 8, key_callback, NULL);
-            printf("T1: %d ",error);
         }
     }
 
+    // Exit program and display final error code
     usb_Cleanup();
     printf("error: %d", error);
     os_GetKey();

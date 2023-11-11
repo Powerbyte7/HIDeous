@@ -9,114 +9,153 @@
 #include "usb_hid_keys.h"
 
 #define DEFAULT_LANGID 0x0409
+#define MACRO_DELAY 0x016F
 
 static const uint8_t map[] = {
-    [sk_Up    ] = KEY_UP,
-    [sk_Down  ] = KEY_DOWN,
-    [sk_Left  ] = KEY_LEFT,
-    [sk_Right ] = KEY_RIGHT,
-    [sk_Del   ] = KEY_BACKSPACE,
-    [sk_Clear ] = KEY_NONE,
-    [sk_Math  ] = KEY_A,
-    [sk_Apps  ] = KEY_B,
-    [sk_Prgm  ] = KEY_C,
-    [sk_Recip ] = KEY_D,
-    [sk_Sin   ] = KEY_E,
-    [sk_Cos   ] = KEY_F,
-    [sk_Tan   ] = KEY_G,
-    [sk_Power ] = KEY_H,
-    [sk_Square] = KEY_I,
-    [sk_Comma ] = KEY_J,
-    [sk_LParen] = KEY_K,
-    [sk_RParen] = KEY_L,
-    [sk_Div   ] = KEY_M,
-    [sk_Log   ] = KEY_N,
-    [sk_7     ] = KEY_O,
-    [sk_8     ] = KEY_P,
-    [sk_9     ] = KEY_Q,
-    [sk_Mul   ] = KEY_R,
-    [sk_Ln    ] = KEY_S,
-    [sk_4     ] = KEY_T,
-    [sk_5     ] = KEY_U,
-    [sk_6     ] = KEY_V,
-    [sk_Sub   ] = KEY_W,
-    [sk_Store ] = KEY_X,
-    [sk_1     ] = KEY_Y,
-    [sk_2     ] = KEY_Z,
-    [sk_3     ] = KEY_CAPSLOCK,
-    [sk_Add   ] = KEY_APOSTROPHE,
-    [sk_0     ] = KEY_SPACE,
-    [sk_DecPnt] = KEY_SEMICOLON,
-    [sk_Chs   ] = KEY_SLASH,
-    [sk_Enter ] = KEY_ENTER,
-    [sk_Stat  ] = KEY_TAB,
-};
+    [sk_2nd     ] = KEY_LEFTSHIFT,
+    [sk_Alpha   ] = KEY_LEFTCTRL,
+    [sk_GraphVar] = KEY_LEFTALT,
+    [sk_Vars    ] = KEY_LEFTMETA,
+    [sk_Up      ] = KEY_UP,
+    [sk_Down    ] = KEY_DOWN,
+    [sk_Left    ] = KEY_LEFT,
+    [sk_Right   ] = KEY_RIGHT,
+    [sk_Del     ] = KEY_BACKSPACE,
+    [sk_Clear   ] = KEY_NONE,
+    [sk_Math    ] = KEY_A,
+    [sk_Apps    ] = KEY_B,
+    [sk_Prgm    ] = KEY_C,
+    [sk_Recip   ] = KEY_D,
+    [sk_Sin     ] = KEY_E,
+    [sk_Cos     ] = KEY_F,
+    [sk_Tan     ] = KEY_G,
+    [sk_Power   ] = KEY_H,
+    [sk_Square  ] = KEY_I,
+    [sk_Comma   ] = KEY_J,
+    [sk_LParen  ] = KEY_K,
+    [sk_RParen  ] = KEY_L,
+    [sk_Div     ] = KEY_M,
+    [sk_Log     ] = KEY_N,
+    [sk_7       ] = KEY_O,
+    [sk_8       ] = KEY_P,
+    [sk_9       ] = KEY_Q,
+    [sk_Mul     ] = KEY_R,
+    [sk_Ln      ] = KEY_S,
+    [sk_4       ] = KEY_T,
+    [sk_5       ] = KEY_U,
+    [sk_6       ] = KEY_V,
+    [sk_Sub     ] = KEY_W,
+    [sk_Store   ] = KEY_X,
+    [sk_1       ] = KEY_Y,
+    [sk_2       ] = KEY_Z,
+    [sk_3       ] = KEY_CAPSLOCK,
+    [sk_Add     ] = KEY_APOSTROPHE,
+    [sk_0       ] = KEY_SPACE,
+    [sk_DecPnt  ] = KEY_SEMICOLON,
+    [sk_Chs     ] = KEY_SLASH,
+    [sk_Enter   ] = KEY_ENTER,
+    [sk_Stat    ] = KEY_TAB,
+};  
 
 static const uint8_t special_map[] = {
-    [sk_Up    ] = KEY_VOLUMEUP,
-    [sk_Down  ] = KEY_VOLUMEDOWN,
-    [sk_Left  ] = KEY_MEDIA_BACK,
-    [sk_Right ] = KEY_MEDIA_FORWARD,
-    [sk_Del   ] = KEY_BACKSPACE,
-    [sk_Clear ] = KEY_NONE,
-    [sk_Math  ] = KEY_F1,
-    [sk_Apps  ] = KEY_F2,
-    [sk_Prgm  ] = KEY_F3,
-    [sk_Recip ] = KEY_F4,
-    [sk_Sin   ] = KEY_F5,
-    [sk_Cos   ] = KEY_F6,
-    [sk_Tan   ] = KEY_F7,
-    [sk_Power ] = KEY_F8,
-    [sk_Square] = KEY_HOME,
-    [sk_Comma ] = KEY_COMMA,
-    [sk_LParen] = KEY_KPLEFTPAREN,
-    [sk_RParen] = KEY_KPRIGHTPAREN,
-    [sk_Div   ] = KEY_ESC,
-    [sk_Log   ] = KEY_PAGEUP,
-    [sk_7     ] = KEY_7,
-    [sk_8     ] = KEY_8,
-    [sk_9     ] = KEY_9,
-    [sk_Mul   ] = KEY_KPASTERISK,
-    [sk_Ln    ] = KEY_PAGEDOWN,
-    [sk_4     ] = KEY_4,
-    [sk_5     ] = KEY_5,
-    [sk_6     ] = KEY_6,
-    [sk_Sub   ] = KEY_MINUS,
-    [sk_Store ] = KEY_END,
-    [sk_1     ] = KEY_1,
-    [sk_2     ] = KEY_2,
-    [sk_3     ] = KEY_3,
-    [sk_Add   ] = KEY_EQUAL,
-    [sk_0     ] = KEY_0,
-    [sk_DecPnt] = KEY_SEMICOLON,
-    [sk_Chs   ] = KEY_SLASH,
-    [sk_Enter ] = KEY_ENTER,
-    [sk_Stat  ] = KEY_TAB,
-    [sk_Vars  ] = KEY_LEFTMETA,
+    [sk_2nd     ] = KEY_LEFTSHIFT,
+    [sk_Alpha   ] = KEY_LEFTCTRL,
+    [sk_GraphVar] = KEY_LEFTALT,
+    [sk_Vars    ] = KEY_LEFTMETA,
+    [sk_Up      ] = KEY_VOLUMEUP,
+    [sk_Down    ] = KEY_VOLUMEDOWN,
+    [sk_Left    ] = KEY_MEDIA_BACK,
+    [sk_Right   ] = KEY_MEDIA_FORWARD,
+    [sk_Del     ] = KEY_BACKSPACE,
+    [sk_Clear   ] = KEY_NONE,
+    [sk_Math    ] = KEY_F1,
+    [sk_Apps    ] = KEY_F2,
+    [sk_Prgm    ] = KEY_F3,
+    [sk_Recip   ] = KEY_F4,
+    [sk_Sin     ] = KEY_F5,
+    [sk_Cos     ] = KEY_F6,
+    [sk_Tan     ] = KEY_F7,
+    [sk_Power   ] = KEY_F8,
+    [sk_Square  ] = KEY_HOME,
+    [sk_Comma   ] = KEY_COMMA,
+    [sk_LParen  ] = KEY_KPLEFTPAREN,
+    [sk_RParen  ] = KEY_KPRIGHTPAREN,
+    [sk_Div     ] = KEY_ESC,
+    [sk_Log     ] = KEY_PAGEUP,
+    [sk_7       ] = KEY_7,
+    [sk_8       ] = KEY_8,
+    [sk_9       ] = KEY_9,
+    [sk_Mul     ] = KEY_KPASTERISK,
+    [sk_Ln      ] = KEY_PAGEDOWN,
+    [sk_4       ] = KEY_4,
+    [sk_5       ] = KEY_5,
+    [sk_6       ] = KEY_6,
+    [sk_Sub     ] = KEY_MINUS,
+    [sk_Store   ] = KEY_END,
+    [sk_1       ] = KEY_1,
+    [sk_2       ] = KEY_2,
+    [sk_3       ] = KEY_3,
+    [sk_Add     ] = KEY_EQUAL,
+    [sk_0       ] = KEY_0,
+    [sk_DecPnt  ] = KEY_SEMICOLON,
+    [sk_Chs     ] = KEY_SLASH,
+    [sk_Enter   ] = KEY_ENTER,
+    [sk_Stat    ] = KEY_TAB,
 };
 
+// Toggles keys in last 6 bytes in input_data
+static uint8_t toggle_hid_key(uint8_t key, uint8_t input_data[]) {
+
+    static uint8_t prev_key;
+
+    // Toggles the modifier bits in the first byte of input_data
+    switch (key) {
+        case KEY_LEFTSHIFT:
+            input_data[0] = input_data[0] ^ SHIFT_BIT;
+            return 0;
+        case KEY_LEFTCTRL:
+            input_data[0] = input_data[0] ^ CTRL_BIT;
+            return 0;
+        case KEY_LEFTALT:
+            input_data[0] = input_data[0] ^ ALT_BIT;
+            return 0;
+        case KEY_LEFTMETA:
+            input_data[0] = input_data[0] ^ GUI_BIT;
+            break; // Doesn't return because GUI key needs to be set as byte too
+    }
+
+    // If key already exists, set to KEY_NONE
+    for (int i = 2; i <= 7; i++) {
+        prev_key = input_data[i];
+
+        if (prev_key == key) {
+            input_data[i] = KEY_NONE;
+            return 0;
+        }
+    }
+
+    // If key doesn't exist, add it to first available slot
+    for (int i = 2; i <= 7; i++) {
+       prev_key = input_data[i];
+
+        if (prev_key == KEY_NONE) {
+            input_data[i] = key;
+            return 0;
+        }
+    }
+
+    // If there's no space left in the array, send overflow packet
+    // Happens when more than 6 keys are pressed at once
+    return ROLLOVER_ERR; 
+}
+
 // Adds keys to the 8-byte HID input_data
-static uint8_t add_key(uint8_t key, uint8_t input_data[]) {
+static uint8_t toggle_sk_key(uint8_t key, uint8_t input_data[]) {
     // Toggle for normal/special characters
     static bool special_mode;
 
-    // Sets the modifier bits in the first byte of input_data
-    switch (key) {
-        case sk_2nd:
-            input_data[0] = input_data[0] | SHIFT_BIT;
-            return 0;
-        case sk_Alpha:
-            input_data[0] = input_data[0] | CTRL_BIT;
-            return 0;
-        case sk_GraphVar:
-            input_data[0] = input_data[0] | ALT_BIT;
-            return 0;
-        case sk_Vars:
-            input_data[0] = input_data[0] | GUI_BIT;
-            break; // Doesn't return because GUI key needs to be set as byte too
-        case sk_Mode:
-            special_mode = !special_mode;
-            return 0;
+    if (key == sk_Mode) {
+        special_mode = !special_mode;
     }
 
     // GSC key conversion to HID key
@@ -126,31 +165,11 @@ static uint8_t add_key(uint8_t key, uint8_t input_data[]) {
     } else {
         hid_key = key < sizeof(special_map) / sizeof(*special_map) ? special_map[key] : KEY_NONE;
     }
-    
-    printf("K%d",hid_key);
 
-    // Adds keys to last 6 bytes in input_data
-    for (int i = 2; i <= 7; i++) {
-        uint8_t prev_key = input_data[i];
-        if (prev_key == KEY_NONE) {
-            input_data[i] = hid_key;
-            return 0;
-        }
-    }
-
-    // No space in array left, send overflow packet
-    // Happens when more than 6 keys are pressed at once
-    return ROLLOVER_ERR; 
+    return hid_key ? toggle_hid_key(hid_key, input_data) : 0; 
 }
 
 static usb_device_t active_device;
-
-static usb_error_t key_callback(usb_endpoint_t pEndpoint, usb_transfer_status_t status, size_t size, uint8_t state) {
-
-    // Empty for the time being
-
-    return USB_SUCCESS;
-}
 
 static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
                                   usb_callback_data_t *callback_data) {
@@ -160,13 +179,6 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
         .wValue = 0,
         .wIndex = 0,
         .wLength = 0,
-    };
-
-    static const hid_report_request_t check_hid_report_request = {
-        .bmRequestType = 0x81, // USB_DEVICE_TO_HOST | USB_STANDARD_REQUEST | USB_RECIPIENT_INTERFACE, 
-        .bDescriptorIndex = 0x0, 
-        .bDescriptorType = 0x22, // HID report
-        .wDescriptorLength = 63,
     };
 
     static const uint8_t hid_report_descriptor[63] = {
@@ -204,15 +216,6 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
         0x0C0        // END_COLLECTION
     };
 
-    static const uint8_t hid_report_check[8] = {
-        0x81,
-        0x6,
-        0x0,
-        0x22,
-        0x0,
-        0x0,
-        0x63
-    };
     
     usb_error_t error = USB_SUCCESS;
 
@@ -234,7 +237,7 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
             if (hid2[0] == 0x81) {
                 printf("DEVICE:%02X ", active_device);
 
-                error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), hid_report_descriptor, 63, key_callback, NULL);
+                error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), hid_report_descriptor, 63, NULL, NULL);
                 printf("REP_ERROR:%d ", error);
                 error = USB_IGNORE;
             } else if (hid2[0] == 0x21) {\
@@ -248,6 +251,88 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
     return error;               
 }
 
+void delay_macro(uint16_t delay_length) {
+    for (uint16_t i = 0; i <= delay_length; i++) {
+        usb_HandleEvents();
+    }
+}
+
+uint8_t call_macro(uint8_t macro_index) {
+    printf("MACRO:%d ", macro_index);
+    
+    usb_error_t error;
+
+    // Simple counter to delay keystrokes, the usbdrvce timer API is broken
+    static uint16_t macro_counter = 0; 
+
+    static uint8_t marco_input_data[8] = {
+        0, // Modifier key
+        0, // Reserved
+        0, // First input
+        0,
+        0,
+        0,
+        0,
+        0
+    };
+    
+
+    static uint8_t marco1[6] = {
+        KEY_LEFTCTRL,
+        KEY_LEFTALT,
+        KEY_T,
+        KEY_T,
+        KEY_LEFTCTRL,
+        KEY_LEFTALT
+    };
+
+    for (int i = 0; i < sizeof(marco2); ++i) {
+        if (marco2[i] == KEY_NONE) {
+            break;  // Exit the loop when 0 is found
+        }
+
+        toggle_hid_key(marco2[i], &marco_input_data);
+
+        // Send input data to host
+        error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &marco_input_data, 8, NULL, NULL);
+
+        // Wait some time before proceeding
+        delay_macro(MACRO_DELAY);
+    }
+
+    return error;
+}
+
+// Exit program and display final error code
+int program_exit(uint8_t error) {
+    usb_Cleanup();
+    printf("error: %d", error);
+    os_GetKey();
+    return error;
+}
+
+uint8_t get_single_key_pressed(void) {
+    static uint8_t last_key;
+    uint8_t only_key = 0;
+    kb_Scan();
+    for (uint8_t key = 1, group = 7; group; --group) {
+        for (uint8_t mask = 1; mask; mask <<= 1, ++key) {
+            if (kb_Data[group] & mask) {
+                if (only_key) {
+                    last_key = 0;
+                    return 0;
+                } else {
+                    only_key = key;
+                }
+            }
+        }
+    }
+    if (only_key == last_key) {
+        return 0;
+    }
+    last_key = only_key;
+    return only_key;
+}
 
 int main(void) {
     static const usb_string_descriptor_t product_name = {
@@ -402,29 +487,44 @@ int main(void) {
             }
 
             // Clear input array
-            memset(&input_data, KEY_NONE, 8);
+            for (uint8_t i = 0; i <= 7; i++) {
+                input_data[i] = KEY_NONE;
+            }
             
-            uint8_t exit = 0; // To exit if clear is pressed
-            uint8_t rollover_err; // To determine if too many keys are pressed at once
+            uint8_t rollover_err = 0; // To determine if too many keys are pressed at once
 
             // Converts keypadc data into GetGSC codes
             // Then adds them to input_data array
-            for (uint8_t key = 1, group = 7; group; --group) {
+            for (uint8_t key = 1, byte = 7; byte; --byte) {
                 for (uint8_t mask = 1; mask; mask <<= 1, ++key) {
-                    if (kb_Data[group] & mask) {
-                        
-                        if (key == sk_Clear) {
-                            exit = 1;
+                    if (kb_Data[byte] & mask) {
+
+                        printf("K:%d \n", key);
+
+                        switch(key) {
+                            case sk_Clear: // Exit if clear is pressed
+                                return program_exit(error);
+                            case sk_Graph: // Call macro 5
+                                call_macro(5);
+                                break;
+                            case sk_Trace: // Call macro 4
+                                call_macro(4);
+                                break;
+                            case sk_Zoom: // Call macro 3
+                                call_macro(3);
+                                break;
+                            case sk_Window: // Call macro 2
+                                call_macro(2);
+                                break;
+                            case sk_Yequ: // Call macro 1
+                                call_macro(1);
+                                break;
                         }
-                        // Add key
-                        rollover_err = add_key(key, &input_data[0]);
+
+                        // Toggle key
+                        rollover_err = toggle_sk_key(key, &input_data[0]);
                     }
                 }
-            }
-
-            // Exit if clear is pressed
-            if (exit) {
-                break;
             }
 
             // Update previous input state
@@ -435,17 +535,14 @@ int main(void) {
             // Send rollover data instead of normal data to host
             // If more than 6 keys are pressed at once
             if (rollover_err) {
-                error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &roll_over_data, 8, key_callback, NULL);
+                error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &roll_over_data, 8, NULL, NULL);
                 continue;
             }
 
             // Send input data to host
-            error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &input_data, 8, key_callback, NULL);
+            error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &input_data, 8, NULL, NULL);
         }
     }
 
-    // Exit program and display final error code
-    usb_Cleanup();
-    printf("error: %d", error);
-    os_GetKey();
+    program_exit(error);
 }

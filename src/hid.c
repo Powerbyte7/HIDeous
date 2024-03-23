@@ -9,7 +9,8 @@
 #include "usb_hid_keys.h"
 
 #define DEFAULT_LANGID 0x0409
-#define MACRO_DELAY 0x016F
+#define MACRO_DELAY 0x00CF
+#define KEY_ONCE 0x03
 
 static const uint8_t map[] = {
     [sk_2nd     ] = KEY_LEFTSHIFT,
@@ -101,6 +102,47 @@ static const uint8_t special_map[] = {
     [sk_Chs     ] = KEY_SLASH,
     [sk_Enter   ] = KEY_ENTER,
     [sk_Stat    ] = KEY_TAB,
+};
+
+static uint8_t macro1[] = {
+    KEY_ONCE,
+    KEY_LEFTCTRL,
+    KEY_ONCE,
+    KEY_LEFTALT,
+    KEY_ONCE,
+    KEY_LEFTSHIFT,
+    KEY_ONCE,
+    KEY_LEFTMETA,
+    KEY_L,
+    KEY_ONCE,
+    KEY_LEFTSHIFT,
+    KEY_ONCE,
+    KEY_LEFTMETA,
+    KEY_ONCE,
+    KEY_LEFTCTRL,
+    KEY_ONCE,
+    KEY_LEFTALT,
+    KEY_NONE
+};
+
+static uint8_t macro2[] = {
+    KEY_F2,
+    KEY_NONE
+};
+
+static uint8_t macro3[] = {
+    KEY_F3,
+    KEY_NONE
+};
+
+static uint8_t macro4[] = {
+    KEY_F4,
+    KEY_NONE
+};
+
+static uint8_t macro5[] = {
+    KEY_F5,
+    KEY_NONE
 };
 
 // Toggles keys in last 6 bytes in input_data
@@ -258,6 +300,16 @@ void delay_macro(uint16_t delay_length) {
 }
 
 uint8_t call_macro(uint8_t macro_index) {
+    static uint8_t *macros[5] = {
+        macro1,
+        macro2,
+        macro3,
+        macro4,
+        macro5
+    };
+
+    uint8_t *macro = macros[macro_index];
+
     printf("MACRO:%d ", macro_index);
     
     usb_error_t error;
@@ -265,7 +317,7 @@ uint8_t call_macro(uint8_t macro_index) {
     // Simple counter to delay keystrokes, the usbdrvce timer API is broken
     static uint16_t macro_counter = 0; 
 
-    static uint8_t marco_input_data[8] = {
+    static uint8_t macro_input_data[8] = {
         0, // Modifier key
         0, // Reserved
         0, // First input
@@ -275,28 +327,22 @@ uint8_t call_macro(uint8_t macro_index) {
         0,
         0
     };
-    
 
-    static uint8_t marco1[6] = {
-        KEY_LEFTCTRL,
-        KEY_LEFTALT,
-        KEY_T,
-        KEY_T,
-        KEY_LEFTCTRL,
-        KEY_LEFTALT
-    };
-
-    for (int i = 0; i < sizeof(marco2); ++i) {
-        if (marco2[i] == KEY_NONE) {
-            break;  // Exit the loop when 0 is found
+    for (int i = 0; i < 1000; ++i) {
+        if (macro[i] == KEY_NONE) {
+            break;  // End of macro
+        } else if (macro[i] == KEY_ONCE) { 
+            ++i; // Next key is only pressed/released, not both
+        } else {
+            // Toggle current key
+            toggle_hid_key(macro[i], &macro_input_data);
+            error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &macro_input_data, 8, NULL, NULL);
+            delay_macro(MACRO_DELAY);
         }
-
-        toggle_hid_key(marco2[i], &marco_input_data);
-
-        // Send input data to host
-        error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &marco_input_data, 8, NULL, NULL);
-
-        // Wait some time before proceeding
+        
+        // Toggle current key
+        toggle_hid_key(macro[i], &macro_input_data);
+        error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &macro_input_data, 8, NULL, NULL);
         delay_macro(MACRO_DELAY);
     }
 
@@ -505,19 +551,19 @@ int main(void) {
                             case sk_Clear: // Exit if clear is pressed
                                 return program_exit(error);
                             case sk_Graph: // Call macro 5
-                                call_macro(5);
-                                break;
-                            case sk_Trace: // Call macro 4
                                 call_macro(4);
                                 break;
-                            case sk_Zoom: // Call macro 3
+                            case sk_Trace: // Call macro 4
                                 call_macro(3);
                                 break;
-                            case sk_Window: // Call macro 2
+                            case sk_Zoom: // Call macro 3
                                 call_macro(2);
                                 break;
-                            case sk_Yequ: // Call macro 1
+                            case sk_Window: // Call macro 2
                                 call_macro(1);
+                                break;
+                            case sk_Yequ: // Call macro 1
+                                call_macro(0);
                                 break;
                         }
 

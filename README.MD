@@ -22,3 +22,7 @@ To change the key layout you'll need to compile HIDeous yourself. Don't worry, i
 2. Download the [source code](https://github.com/Powerbyte7/HIDeous/archive/refs/heads/master.zip)
 3. In hid.c, change the keycodes in the map[] and/or special_map[] arrays. You can find the keycodes in usb_hid_keys.h
 4. Build the program and send the resulting 8xp file to your calculator.
+
+## Adding Macros
+
+To add macros you'll need to compile HIDeous as explained above. You can again use all of the keys defined in usb_hid_keys.h. By defaut, HIDeous will both press and release the key in a short timeframe. If you want to hold a key down, you need to preface the key with KEY_ONCE. Releasing the key is done the same way.

@@ -4,146 +4,16 @@
 #include <tice.h>
 #include <string.h>
 #include <keypadc.h>
+#include <fileioc.h>
 
-#include "hid.h"
+#include "main.h"
+#include "keymap.h"
+#include "macros.h"
 #include "usb_hid_keys.h"
 
 #define DEFAULT_LANGID 0x0409
-#define MACRO_DELAY 0x00CF
+#define MACRO_DELAY 0x016F
 #define KEY_ONCE 0x03
-
-static const uint8_t map[] = {
-    [sk_2nd     ] = KEY_LEFTSHIFT,
-    [sk_Alpha   ] = KEY_LEFTCTRL,
-    [sk_GraphVar] = KEY_LEFTALT,
-    [sk_Vars    ] = KEY_LEFTMETA,
-    [sk_Up      ] = KEY_UP,
-    [sk_Down    ] = KEY_DOWN,
-    [sk_Left    ] = KEY_LEFT,
-    [sk_Right   ] = KEY_RIGHT,
-    [sk_Del     ] = KEY_BACKSPACE,
-    [sk_Clear   ] = KEY_NONE,
-    [sk_Math    ] = KEY_A,
-    [sk_Apps    ] = KEY_B,
-    [sk_Prgm    ] = KEY_C,
-    [sk_Recip   ] = KEY_D,
-    [sk_Sin     ] = KEY_E,
-    [sk_Cos     ] = KEY_F,
-    [sk_Tan     ] = KEY_G,
-    [sk_Power   ] = KEY_H,
-    [sk_Square  ] = KEY_I,
-    [sk_Comma   ] = KEY_J,
-    [sk_LParen  ] = KEY_K,
-    [sk_RParen  ] = KEY_L,
-    [sk_Div     ] = KEY_M,
-    [sk_Log     ] = KEY_N,
-    [sk_7       ] = KEY_O,
-    [sk_8       ] = KEY_P,
-    [sk_9       ] = KEY_Q,
-    [sk_Mul     ] = KEY_R,
-    [sk_Ln      ] = KEY_S,
-    [sk_4       ] = KEY_T,
-    [sk_5       ] = KEY_U,
-    [sk_6       ] = KEY_V,
-    [sk_Sub     ] = KEY_W,
-    [sk_Store   ] = KEY_X,
-    [sk_1       ] = KEY_Y,
-    [sk_2       ] = KEY_Z,
-    [sk_3       ] = KEY_CAPSLOCK,
-    [sk_Add     ] = KEY_APOSTROPHE,
-    [sk_0       ] = KEY_SPACE,
-    [sk_DecPnt  ] = KEY_SEMICOLON,
-    [sk_Chs     ] = KEY_SLASH,
-    [sk_Enter   ] = KEY_ENTER,
-    [sk_Stat    ] = KEY_TAB,
-};  
-
-static const uint8_t special_map[] = {
-    [sk_2nd     ] = KEY_LEFTSHIFT,
-    [sk_Alpha   ] = KEY_LEFTCTRL,
-    [sk_GraphVar] = KEY_LEFTALT,
-    [sk_Vars    ] = KEY_LEFTMETA,
-    [sk_Up      ] = KEY_VOLUMEUP,
-    [sk_Down    ] = KEY_VOLUMEDOWN,
-    [sk_Left    ] = KEY_MEDIA_BACK,
-    [sk_Right   ] = KEY_MEDIA_FORWARD,
-    [sk_Del     ] = KEY_BACKSPACE,
-    [sk_Clear   ] = KEY_NONE,
-    [sk_Math    ] = KEY_F1,
-    [sk_Apps    ] = KEY_F2,
-    [sk_Prgm    ] = KEY_F3,
-    [sk_Recip   ] = KEY_F4,
-    [sk_Sin     ] = KEY_F5,
-    [sk_Cos     ] = KEY_F6,
-    [sk_Tan     ] = KEY_F7,
-    [sk_Power   ] = KEY_F8,
-    [sk_Square  ] = KEY_HOME,
-    [sk_Comma   ] = KEY_COMMA,
-    [sk_LParen  ] = KEY_KPLEFTPAREN,
-    [sk_RParen  ] = KEY_KPRIGHTPAREN,
-    [sk_Div     ] = KEY_ESC,
-    [sk_Log     ] = KEY_PAGEUP,
-    [sk_7       ] = KEY_7,
-    [sk_8       ] = KEY_8,
-    [sk_9       ] = KEY_9,
-    [sk_Mul     ] = KEY_KPASTERISK,
-    [sk_Ln      ] = KEY_PAGEDOWN,
-    [sk_4       ] = KEY_4,
-    [sk_5       ] = KEY_5,
-    [sk_6       ] = KEY_6,
-    [sk_Sub     ] = KEY_MINUS,
-    [sk_Store   ] = KEY_END,
-    [sk_1       ] = KEY_1,
-    [sk_2       ] = KEY_2,
-    [sk_3       ] = KEY_3,
-    [sk_Add     ] = KEY_EQUAL,
-    [sk_0       ] = KEY_0,
-    [sk_DecPnt  ] = KEY_SEMICOLON,
-    [sk_Chs     ] = KEY_SLASH,
-    [sk_Enter   ] = KEY_ENTER,
-    [sk_Stat    ] = KEY_TAB,
-};
-
-static uint8_t macro1[] = {
-    KEY_ONCE,
-    KEY_LEFTCTRL,
-    KEY_ONCE,
-    KEY_LEFTALT,
-    KEY_ONCE,
-    KEY_LEFTSHIFT,
-    KEY_ONCE,
-    KEY_LEFTMETA,
-    KEY_L,
-    KEY_ONCE,
-    KEY_LEFTSHIFT,
-    KEY_ONCE,
-    KEY_LEFTMETA,
-    KEY_ONCE,
-    KEY_LEFTCTRL,
-    KEY_ONCE,
-    KEY_LEFTALT,
-    KEY_NONE
-};
-
-static uint8_t macro2[] = {
-    KEY_F2,
-    KEY_NONE
-};
-
-static uint8_t macro3[] = {
-    KEY_F3,
-    KEY_NONE
-};
-
-static uint8_t macro4[] = {
-    KEY_F4,
-    KEY_NONE
-};
-
-static uint8_t macro5[] = {
-    KEY_F5,
-    KEY_NONE
-};
 
 // Toggles keys in last 6 bytes in input_data
 static uint8_t toggle_hid_key(uint8_t key, uint8_t input_data[]) {
@@ -213,14 +83,40 @@ static uint8_t toggle_sk_key(uint8_t key, uint8_t input_data[]) {
 
 static usb_device_t active_device;
 
+// int debug_printed = 0;
+// void temp(void* array, void* structure) {
+//     if (debug_printed) {
+//         return;
+//     }
+
+//     debug_printed = 1;
+//     printf("\n");
+//     for (int i = 0; i<sizeof(usb_control_setup_t); i+=4) {
+//         printf("USB: %02X %02X %02X %02X\n", (char*)*((char*)structure+i), (char*)*((char*)structure+1+i), (char*)*((char*)structure+2+i), (char*)*((char*)structure+3+i));
+//         printf("VAR: %02X %02X %02X %02X\n", (char*)*((char*)array+i), (char*)*((char*)array+1+i), (char*)*((char*)array+2+i), (char*)*((char*)array+3+i));
+//     }
+
+//     if (!memcmp(array, structure, sizeof(usb_control_setup_t))) {
+//         printf("It works\n");
+//     } else {
+//         printf("It does not\n");
+//     }
+    
+// }
+
 static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
-                                  usb_callback_data_t *callback_data) {
-    static const usb_control_setup_t check_idle_request = {
-        .bmRequestType = USB_HOST_TO_DEVICE | USB_VENDOR_REQUEST | USB_RECIPIENT_INTERFACE, // 0x21
-        .bRequest = 0x0a, // Set idle
-        .wValue = 0,
-        .wIndex = 0,
-        .wLength = 0,
+                                  void *unused) {
+
+    (void)unused;
+
+    static const uint8_t hid_report_check[8] = {
+        0x81,
+        0x6,
+        0x0,
+        0x22,
+        0x0,
+        0x0,
+        0x7F
     };
 
     static const uint8_t hid_report_descriptor[63] = {
@@ -258,64 +154,84 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
         0x0C0        // END_COLLECTION
     };
 
-    
     usb_error_t error = USB_SUCCESS;
 
     active_device = usb_FindDevice(NULL, NULL, USB_SKIP_HUBS);
 
-    static const usb_control_setup_t transfer_setup = {
-        .bmRequestType = 0,
-        .bRequest = 0,
-        .wValue = 0,
-        .wIndex = 0,
-        .wLength = 0,
-    };
-
     switch ((unsigned)event) {
         case USB_DEFAULT_SETUP_EVENT: {
             const usb_control_setup_t *setup = event_data;
-            const uint8_t *hid2 = event_data;
-            const hid_report_request_t *hid = event_data;
-            if (hid2[0] == 0x81) {
-                printf("DEVICE:%02X ", active_device);
-
-                error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), hid_report_descriptor, 63, NULL, NULL);
-                printf("REP_ERROR:%d ", error);
+        
+            if (!memcmp(hid_report_check, setup, sizeof(*setup))) {
+                printf("DEVICE:%02X\n", (uint24_t) active_device);
+                error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), (void *)hid_report_descriptor, 63, NULL, NULL);
+                printf("REP_ERROR:%d\n", error);
                 error = USB_IGNORE;
-            } else if (hid2[0] == 0x21) {\
+
+            } else if (setup->bmRequestType == 0x21) {\
                 error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), NULL, 0, NULL, NULL);
-                printf("SET_ERROR:%d ", error);
+                printf("SET_ERROR:%d\n", error);
                 error = USB_IGNORE;
             }
-
         }
-    }     
+    }
+
     return error;               
 }
 
-void delay_macro(uint16_t delay_length) {
-    for (uint16_t i = 0; i <= delay_length; i++) {
-        usb_HandleEvents();
-    }
-}
-
-uint8_t call_macro(uint8_t macro_index) {
-    static uint8_t *macros[5] = {
+static void store_appvars() {
+    static const uint8_t *macros[] = {
         macro1,
         macro2,
         macro3,
         macro4,
         macro5
     };
+    static const uint8_t sizes[] = {
+        sizeof(macro1),
+        sizeof(macro2),
+        sizeof(macro3),
+        sizeof(macro4),
+        sizeof(macro5)
+    };
 
-    uint8_t *macro = macros[macro_index];
+    char appvar_name[] = "HIDM0";
 
+    for (uint8_t i = 0; i < (sizeof(macros)/sizeof(macros[0])); i++) {
+        appvar_name[4] += 1;
+
+        uint8_t exists = ti_Open(appvar_name, "r");
+        if (exists) {
+            ti_Close(exists);
+            continue;
+        }
+
+        uint8_t macro_handle = ti_Open(appvar_name, "w");
+        
+        ti_Write(macros[i], sizes[i], 1, macro_handle);
+        ti_Close(macro_handle);
+    }
+}
+
+static void delay_macro(uint16_t delay_length) {
+    for (uint16_t i = 0; i <= delay_length; i++) {
+        usb_HandleEvents();
+    }
+}
+
+static uint8_t call_macro(uint8_t macro_index) {
     printf("MACRO:%d ", macro_index);
     
+    char appvar_name[] = "HIDM1";
+    appvar_name[4] += macro_index;
+    uint8_t macro_handle = ti_Open(appvar_name, "r+");
+    
+    if (!macro_handle) {
+        return 1;
+    }
+    
+    // Returns at end of function
     usb_error_t error;
-
-    // Simple counter to delay keystrokes, the usbdrvce timer API is broken
-    static uint16_t macro_counter = 0; 
 
     static uint8_t macro_input_data[8] = {
         0, // Modifier key
@@ -329,55 +245,38 @@ uint8_t call_macro(uint8_t macro_index) {
     };
 
     for (int i = 0; i < 1000; ++i) {
-        if (macro[i] == KEY_NONE) {
-            break;  // End of macro
-        } else if (macro[i] == KEY_ONCE) { 
-            ++i; // Next key is only pressed/released, not both
+        int key = ti_GetC(macro_handle);
+
+        if (key <= KEY_NONE ) {
+            break;  // End of macro sequence
+        } else if (key == KEY_ONCE) { 
+            // Key is toggled, 
+            key = ti_GetC(macro_handle);
+            ++i; 
         } else {
-            // Toggle current key
-            toggle_hid_key(macro[i], &macro_input_data);
+            // Press key
+            toggle_hid_key((uint8_t) key, (uint8_t *)&macro_input_data);
             error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &macro_input_data, 8, NULL, NULL);
             delay_macro(MACRO_DELAY);
         }
         
-        // Toggle current key
-        toggle_hid_key(macro[i], &macro_input_data);
+        // Release key
+        toggle_hid_key((uint8_t) key, (uint8_t *)&macro_input_data);
         error = (usb_error_t) usb_ScheduleInterruptTransfer(usb_GetDeviceEndpoint(active_device, 0x81), &macro_input_data, 8, NULL, NULL);
         delay_macro(MACRO_DELAY);
     }
+
+    ti_Close(macro_handle);
 
     return error;
 }
 
 // Exit program and display final error code
-int program_exit(uint8_t error) {
+static int program_exit(uint8_t error) {
     usb_Cleanup();
     printf("error: %d", error);
     os_GetKey();
     return error;
-}
-
-uint8_t get_single_key_pressed(void) {
-    static uint8_t last_key;
-    uint8_t only_key = 0;
-    kb_Scan();
-    for (uint8_t key = 1, group = 7; group; --group) {
-        for (uint8_t mask = 1; mask; mask <<= 1, ++key) {
-            if (kb_Data[group] & mask) {
-                if (only_key) {
-                    last_key = 0;
-                    return 0;
-                } else {
-                    only_key = key;
-                }
-            }
-        }
-    }
-    if (only_key == last_key) {
-        return 0;
-    }
-    last_key = only_key;
-    return only_key;
 }
 
 int main(void) {
@@ -500,6 +399,7 @@ int main(void) {
         KEY_ERR_OVF
     };
 
+    store_appvars();
     os_SetCursorPos(1, 0);
 
     // Copy of kb_Data to compare for changes

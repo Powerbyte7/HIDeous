@@ -25,4 +25,4 @@ To change the key layout you'll need to compile HIDeous yourself. Don't worry, i
 
 ## Adding Macros
 
-To add macros you'll need to compile HIDeous as explained above. You can again use all of the keys defined in usb_hid_keys.h. By defaut, HIDeous will both press and release the key in a short timeframe. If you want to hold a key down, you need to preface the key with KEY_ONCE. Releasing the key is done the same way.
+To add macros you'll need to replace the macro AppVars (HIDM1-HIDM5) with your own macro sequence. You can again use all of the keys defined in usb_hid_keys.h. By defaut, HIDeous will toggle the key twice in a short timeframe. If you want to toggle a key once to keep it pressed down, you need to preface the key with KEY_ONCE.

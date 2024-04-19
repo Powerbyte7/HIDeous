@@ -22,13 +22,6 @@ typedef struct hid_descriptor {
     uint16_t wDescriptorLength;  // Length of HID class descriptor
 } hid_descriptor_t;
 
-typedef struct hid_report_request {
-    uint8_t bmRequestType;
-    uint8_t bDescriptorIndex;
-    uint8_t bDescriptorType;
-    uint8_t wDescriptorLength;
-} hid_report_request_t;
-
 #ifdef __cplusplus
 extern "C"
 }

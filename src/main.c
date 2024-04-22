@@ -85,27 +85,6 @@ static uint8_t toggle_sk_key(uint8_t key, uint8_t input_data[]) {
 
 static usb_device_t active_device;
 
-// int debug_printed = 0;
-// void temp(void* array, void* structure) {
-//     if (debug_printed) {
-//         return;
-//     }
-
-//     debug_printed = 1;
-//     printf("\n");
-//     for (int i = 0; i<sizeof(usb_control_setup_t); i+=4) {
-//         printf("USB: %02X %02X %02X %02X\n", (char*)*((char*)structure+i), (char*)*((char*)structure+1+i), (char*)*((char*)structure+2+i), (char*)*((char*)structure+3+i));
-//         printf("VAR: %02X %02X %02X %02X\n", (char*)*((char*)array+i), (char*)*((char*)array+1+i), (char*)*((char*)array+2+i), (char*)*((char*)array+3+i));
-//     }
-
-//     if (!memcmp(array, structure, sizeof(usb_control_setup_t))) {
-//         printf("It works\n");
-//     } else {
-//         printf("It does not\n");
-//     }
-    
-// }
-
 static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
                                   void *unused) {
 

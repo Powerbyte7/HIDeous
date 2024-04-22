@@ -9,6 +9,7 @@
 #include "main.h"
 #include "keymap.h"
 #include "macros.h"
+#include "gui.h"
 #include "usb_hid_keys.h"
 
 #define DEFAULT_LANGID 0x0409
@@ -52,6 +53,7 @@ static uint8_t toggle_hid_key(uint8_t key, uint8_t input_data[]) {
 
         if (prev_key == KEY_NONE) {
             input_data[i] = key;
+            printKey(key);
             return 0;
         }
     }
@@ -70,7 +72,7 @@ static uint8_t toggle_sk_key(uint8_t key, uint8_t input_data[]) {
         special_mode = !special_mode;
     }
 
-    // GSC key conversion to HID key
+    // GSC key to HID key conversion
     uint8_t hid_key;
     if (!special_mode) {
         hid_key = key < sizeof(map) / sizeof(*map) ? map[key] : KEY_NONE;
@@ -82,27 +84,6 @@ static uint8_t toggle_sk_key(uint8_t key, uint8_t input_data[]) {
 }
 
 static usb_device_t active_device;
-
-// int debug_printed = 0;
-// void temp(void* array, void* structure) {
-//     if (debug_printed) {
-//         return;
-//     }
-
-//     debug_printed = 1;
-//     printf("\n");
-//     for (int i = 0; i<sizeof(usb_control_setup_t); i+=4) {
-//         printf("USB: %02X %02X %02X %02X\n", (char*)*((char*)structure+i), (char*)*((char*)structure+1+i), (char*)*((char*)structure+2+i), (char*)*((char*)structure+3+i));
-//         printf("VAR: %02X %02X %02X %02X\n", (char*)*((char*)array+i), (char*)*((char*)array+1+i), (char*)*((char*)array+2+i), (char*)*((char*)array+3+i));
-//     }
-
-//     if (!memcmp(array, structure, sizeof(usb_control_setup_t))) {
-//         printf("It works\n");
-//     } else {
-//         printf("It does not\n");
-//     }
-    
-// }
 
 static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
                                   void *unused) {
@@ -160,25 +141,35 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
 
     switch ((unsigned)event) {
         case USB_DEFAULT_SETUP_EVENT: {
-            const usb_control_setup_t *setup = event_data;
-        
+            const usb_control_setup_t *setup = event_data;            
+
             if (!memcmp(hid_report_check, setup, sizeof(*setup))) {
-                printf("DEVICE:%02X\n", (uint24_t) active_device);
+                char msg[18];
+                sprintf(msg, "DEVICE: %u", (uint24_t) active_device);
+                os_PutStrFull(msg);
+                os_NewLine();
                 error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), (void *)hid_report_descriptor, 63, NULL, NULL);
-                printf("REP_ERROR:%d\n", error);
+                sprintf(msg, "REP_ERR: %u", error);
+                os_PutStrFull(msg);
+                os_NewLine();
                 error = USB_IGNORE;
 
-            } else if (setup->bmRequestType == 0x21) {\
+            } else if (setup->bmRequestType == 0x21) {
                 error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), NULL, 0, NULL, NULL);
-                printf("SET_ERROR:%d\n", error);
+                char msg[18];
+                sprintf(msg, "SET_ERR: %u", error);
+                os_PutStrFull(msg);
+                os_NewLine();
                 error = USB_IGNORE;
             }
+            
         }
     }
 
     return error;               
 }
 
+// Stores macros as AppVar
 static void store_appvars() {
     static const uint8_t *macros[] = {
         macro1,
@@ -220,7 +211,8 @@ static void delay_macro(uint16_t delay_length) {
 }
 
 static uint8_t call_macro(uint8_t macro_index) {
-    printf("MACRO:%d ", macro_index);
+    char macro_msg[9] = "MACRO: 0";
+    macro_msg[8] += macro_index;
     
     char appvar_name[] = "HIDM1";
     appvar_name[4] += macro_index;
@@ -274,7 +266,9 @@ static uint8_t call_macro(uint8_t macro_index) {
 // Exit program and display final error code
 static int program_exit(uint8_t error) {
     usb_Cleanup();
-    printf("error: %d", error);
+    char error_msg[10];
+    sprintf(error_msg, "err: %d", error);
+    os_PutStrFull(error_msg);
     os_GetKey();
     return error;
 }
@@ -408,7 +402,8 @@ int main(void) {
     usb_error_t error;
     if ((error = usb_Init(handleUsbEvent, NULL, &standard,
                           USB_DEFAULT_INIT_FLAGS)) == USB_SUCCESS) {
-        printf("Success!\n");
+        os_PutStrFull("Success!");
+        os_NewLine();
 
         while(1) {
             // Handle events
@@ -417,9 +412,8 @@ int main(void) {
             // Update keypadc state (kb_Data)
             kb_Scan();
 
-            uint8_t input_changed = 0;
-
             // Determine whether input has changed
+            uint8_t input_changed = 0;
             for (uint8_t i = 0; i <= 7; i++) {
                 if (last_kb_Data[i] != kb_Data[i]) {
                     input_changed = 1;
@@ -427,25 +421,22 @@ int main(void) {
                 }
             }
 
-            // Don't do anything if no keys are updated
+            // Idle if no keys are updated
             if (!input_changed) {
                 continue;
             }
 
             // Clear input array
-            for (uint8_t i = 0; i <= 7; i++) {
-                input_data[i] = KEY_NONE;
-            }
+            memset(input_data, KEY_NONE, sizeof(input_data));
             
-            uint8_t rollover_err = 0; // To determine if too many keys are pressed at once
+            // Set to 1 if more than 6 keys are pressed at once
+            uint8_t rollover_err = 0;
 
             // Converts keypadc data into GetGSC codes
             // Then adds them to input_data array
             for (uint8_t key = 1, byte = 7; byte; --byte) {
                 for (uint8_t mask = 1; mask; mask <<= 1, ++key) {
                     if (kb_Data[byte] & mask) {
-
-                        printf("K:%d \n", key);
 
                         switch(key) {
                             case sk_Clear: // Exit if clear is pressed

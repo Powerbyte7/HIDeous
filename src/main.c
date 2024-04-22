@@ -9,6 +9,7 @@
 #include "main.h"
 #include "keymap.h"
 #include "macros.h"
+#include "gui.h"
 #include "usb_hid_keys.h"
 
 #define DEFAULT_LANGID 0x0409
@@ -162,18 +163,29 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
     switch ((unsigned)event) {
         case USB_DEFAULT_SETUP_EVENT: {
             const usb_control_setup_t *setup = event_data;
+
+            
         
             if (!memcmp(hid_report_check, setup, sizeof(*setup))) {
-                printf("DEVICE:%02X\n", (uint24_t) active_device);
+                char msg[18];
+                sprintf(msg, "DEVICE: %u", (uint24_t) active_device);
+                os_PutStrFull(msg);
+                os_NewLine();
                 error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), (void *)hid_report_descriptor, 63, NULL, NULL);
-                printf("REP_ERROR:%d\n", error);
+                sprintf(msg, "REP_ERR: %u", error);
+                os_PutStrFull(msg);
+                os_NewLine();
                 error = USB_IGNORE;
 
-            } else if (setup->bmRequestType == 0x21) {\
+            } else if (setup->bmRequestType == 0x21) {
                 error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), NULL, 0, NULL, NULL);
-                printf("SET_ERROR:%d\n", error);
+                char msg[18];
+                sprintf(msg, "SET_ERR: %u", error);
+                os_PutStrFull(msg);
+                os_NewLine();
                 error = USB_IGNORE;
             }
+            
         }
     }
 
@@ -221,7 +233,8 @@ static void delay_macro(uint16_t delay_length) {
 }
 
 static uint8_t call_macro(uint8_t macro_index) {
-    printf("MACRO:%d ", macro_index);
+    char macro_msg[9] = "MACRO: 0";
+    macro_msg[8] += macro_index;
     
     char appvar_name[] = "HIDM1";
     appvar_name[4] += macro_index;
@@ -275,7 +288,9 @@ static uint8_t call_macro(uint8_t macro_index) {
 // Exit program and display final error code
 static int program_exit(uint8_t error) {
     usb_Cleanup();
-    printf("error: %d", error);
+    char error_msg[10];
+    sprintf(error_msg, "err: %d", error);
+    // os_PutStrFull(error_msg);
     os_GetKey();
     return error;
 }
@@ -409,7 +424,8 @@ int main(void) {
     usb_error_t error;
     if ((error = usb_Init(handleUsbEvent, NULL, &standard,
                           USB_DEFAULT_INIT_FLAGS)) == USB_SUCCESS) {
-        printf("Success!\n");
+        // os_PutStrFull("Success!");
+        os_NewLine();
 
         while(1) {
             // Handle events
@@ -445,8 +461,6 @@ int main(void) {
             for (uint8_t key = 1, byte = 7; byte; --byte) {
                 for (uint8_t mask = 1; mask; mask <<= 1, ++key) {
                     if (kb_Data[byte] & mask) {
-
-                        printf("K:%d \n", key);
 
                         switch(key) {
                             case sk_Clear: // Exit if clear is pressed

@@ -62,35 +62,45 @@ static const char* keynames4[] = {
 };
 
 void printKey(uint8_t key) {
-    os_FontSelect(os_LargeFont);
     if (key < KEY_A) {
-        printf("NONE\n");
+        os_PutStrFull("NONE");
+        os_NewLine();
         return;
     }
 
-    printf("KEY_");
+    os_PutStrFull("KEY_");
 
     if (key <= KEY_Z) {
-        printf("%c", key+('A'-KEY_A));
+        char str[2] = {('A'-KEY_A), '\0'};
+        str[0] += key;
+        os_PutStrFull(str);
     } else if (key <= KEY_9) {
-        printf("%d", key-KEY_Z);
+        char str[2];
+        sprintf(str, "%u", key-KEY_Z);
+        os_PutStrFull(str);
     } else if (key <= KEY_CAPSLOCK) {
-        printf("%s", keynames1[key-KEY_0]);
+        os_PutStrFull(keynames1[key-KEY_0]);
     } else if (key <= KEY_F12) {
-        printf("F%d", key-KEY_CAPSLOCK);
+        char str[4];
+        sprintf(str, "F%u", key-KEY_CAPSLOCK);
+        os_PutStrFull(str);
     } else if (key <= KEY_KPENTER) {
-        printf("%s", keynames2[key-KEY_SYSRQ]);
+        os_PutStrFull(keynames2[key-KEY_SYSRQ]);
     } else if (key <= KEY_KP9) {
-        printf("KP%d", key-KEY_KPENTER);
+        char str[4];
+        sprintf(str, "KP%u", key-KEY_KPENTER);
+        os_PutStrFull(str);
     } else if (key <= KEY_KPEQUAL) {
-        printf("%s", keynames3[key-KEY_KP0]);
+        os_PutStrFull(keynames3[key-KEY_KP0]);
     } else if (key <= KEY_F24) {
-        printf("F%d", key-KEY_KPEQUAL);
+        char str[4];
+        sprintf(str, "F%u", key-KEY_KPEQUAL);
+        os_PutStrFull(str);
     } else if (key >= KEY_LEFTCTRL && key <= KEY_LEFTMETA) {
-        printf("%s", keynames4[key-KEY_LEFTCTRL]);
+        os_PutStrFull(keynames4[key-KEY_LEFTCTRL]);
     } else {
-        printf("OTHER");
+        os_PutStrFull("OTHER");
     }
 
-    printf("\n");
+    os_NewLine();
 }

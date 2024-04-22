@@ -61,6 +61,7 @@ static const char* keynames4[] = {
     "META"
 };
 
+// Prints the names of most HID keys
 void printKey(uint8_t key) {
     if (key < KEY_A) {
         os_PutStrFull("NONE");

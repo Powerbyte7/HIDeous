@@ -72,7 +72,7 @@ static uint8_t toggle_sk_key(uint8_t key, uint8_t input_data[]) {
         special_mode = !special_mode;
     }
 
-    // GSC key conversion to HID key
+    // GSC key to HID key conversion
     uint8_t hid_key;
     if (!special_mode) {
         hid_key = key < sizeof(map) / sizeof(*map) ? map[key] : KEY_NONE;
@@ -141,10 +141,8 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
 
     switch ((unsigned)event) {
         case USB_DEFAULT_SETUP_EVENT: {
-            const usb_control_setup_t *setup = event_data;
+            const usb_control_setup_t *setup = event_data;            
 
-            
-        
             if (!memcmp(hid_report_check, setup, sizeof(*setup))) {
                 char msg[18];
                 sprintf(msg, "DEVICE: %u", (uint24_t) active_device);
@@ -171,6 +169,7 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
     return error;               
 }
 
+// Stores macros as AppVar
 static void store_appvars() {
     static const uint8_t *macros[] = {
         macro1,
@@ -269,7 +268,7 @@ static int program_exit(uint8_t error) {
     usb_Cleanup();
     char error_msg[10];
     sprintf(error_msg, "err: %d", error);
-    // os_PutStrFull(error_msg);
+    os_PutStrFull(error_msg);
     os_GetKey();
     return error;
 }
@@ -403,7 +402,7 @@ int main(void) {
     usb_error_t error;
     if ((error = usb_Init(handleUsbEvent, NULL, &standard,
                           USB_DEFAULT_INIT_FLAGS)) == USB_SUCCESS) {
-        // os_PutStrFull("Success!");
+        os_PutStrFull("Success!");
         os_NewLine();
 
         while(1) {
@@ -413,9 +412,8 @@ int main(void) {
             // Update keypadc state (kb_Data)
             kb_Scan();
 
-            uint8_t input_changed = 0;
-
             // Determine whether input has changed
+            uint8_t input_changed = 0;
             for (uint8_t i = 0; i <= 7; i++) {
                 if (last_kb_Data[i] != kb_Data[i]) {
                     input_changed = 1;
@@ -423,17 +421,16 @@ int main(void) {
                 }
             }
 
-            // Don't do anything if no keys are updated
+            // Idle if no keys are updated
             if (!input_changed) {
                 continue;
             }
 
             // Clear input array
-            for (uint8_t i = 0; i <= 7; i++) {
-                input_data[i] = KEY_NONE;
-            }
+            memset(input_data, KEY_NONE, sizeof(input_data));
             
-            uint8_t rollover_err = 0; // To determine if too many keys are pressed at once
+            // Set to 1 if more than 6 keys are pressed at once
+            uint8_t rollover_err = 0;
 
             // Converts keypadc data into GetGSC codes
             // Then adds them to input_data array

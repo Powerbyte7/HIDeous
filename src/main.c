@@ -52,6 +52,7 @@ static uint8_t toggle_hid_key(uint8_t key, uint8_t input_data[]) {
 
         if (prev_key == KEY_NONE) {
             input_data[i] = key;
+            printKey(key);
             return 0;
         }
     }

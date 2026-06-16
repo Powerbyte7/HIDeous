@@ -85,20 +85,35 @@ static uint8_t toggle_sk_key(uint8_t key, uint8_t input_data[]) {
 
 static usb_device_t active_device;
 
+static void print_setup_event(const usb_control_setup_t *event)
+{
+    char msg[24];
+    sprintf(msg, "TYPE: %u", event->bmRequestType);
+    os_PutStrFull(msg);
+    os_NewLine();
+    sprintf(msg, "REQ: %u", event->bRequest);
+    os_PutStrFull(msg);
+    os_NewLine();
+    sprintf(msg, "LVAL: %u", event->wValue >> 8 & 0xFF);
+    os_PutStrFull(msg);
+    os_NewLine();
+    sprintf(msg, "RVAL: %u", event->wValue & 0xFF);
+    os_PutStrFull(msg);
+    os_NewLine();
+}
+
+static bool is_hid_report_request(const usb_control_setup_t *request) {
+    return request->bmRequestType        == (USB_DEVICE_TO_HOST | 1) 
+        && request->bRequest             == 0x6  // Request HID report
+        && (request->wValue >> 8 & 0xFF) == 0x22 // bDescriptorType
+        && (request->wValue & 0xFF)      == 0x0  // bDescriptorIndex 
+        && request->wIndex               == 0x0; // Interfacenumber
+}
+
 static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
                                   void *unused) {
 
     (void)unused;
-
-    static const uint8_t hid_report_check[8] = {
-        0x81,
-        0x6,
-        0x0,
-        0x22,
-        0x0,
-        0x0,
-        0x7F
-    };
 
     static const uint8_t hid_report_descriptor[63] = {
         5, 0x1,      // USAGE_PAGE (Generic Desktop)
@@ -138,32 +153,44 @@ static usb_error_t handleUsbEvent(usb_event_t event, void *event_data,
     usb_error_t error = USB_SUCCESS;
 
     active_device = usb_FindDevice(NULL, NULL, USB_SKIP_HUBS);
+    char msg[18];
 
-    switch ((unsigned)event) {
+    switch (event) {
         case USB_DEFAULT_SETUP_EVENT: {
-            const usb_control_setup_t *setup = event_data;            
-
-            if (!memcmp(hid_report_check, setup, sizeof(*setup))) {
-                char msg[18];
-                sprintf(msg, "DEVICE: %u", (uint24_t) active_device);
-                os_PutStrFull(msg);
-                os_NewLine();
-                error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), (void *)hid_report_descriptor, 63, NULL, NULL);
-                sprintf(msg, "REP_ERR: %u", error);
-                os_PutStrFull(msg);
-                os_NewLine();
-                error = USB_IGNORE;
-
-            } else if (setup->bmRequestType == 0x21) {
-                error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), NULL, 0, NULL, NULL);
-                char msg[18];
-                sprintf(msg, "SET_ERR: %u", error);
-                os_PutStrFull(msg);
-                os_NewLine();
-                error = USB_IGNORE;
-            }
+            const usb_control_setup_t *setup = event_data;
             
+            switch (setup->bRequest) {
+                case 0x6:  // GET_DESCRIPTOR request.
+                {
+                    if (!is_hid_report_request(setup)) {
+                        break;
+                    }
+                    sprintf(msg, "DEVICE: %u", (uint24_t) active_device);
+                    os_PutStrFull(msg);
+                    os_NewLine();
+                    error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), (void *)hid_report_descriptor, 63, NULL, NULL);
+                    sprintf(msg, "REP_ERR: %u", error);
+                    os_PutStrFull(msg);
+                    os_NewLine();
+                    error = USB_IGNORE; // Tells library we've handled the event manually
+                    break;
+                }
+                case 0x21: // SET_IDLE request. Used to make HID device only report when inputs have changed.
+                {
+                    error = usb_ScheduleTransfer(usb_GetDeviceEndpoint(active_device, 0), NULL, 0, NULL, NULL); // Zero-length response acknowledging the request
+                    sprintf(msg, "SET_IDLE: %u", error);
+                    os_PutStrFull(msg);
+                    os_NewLine();
+                    error = USB_IGNORE; // Tells library we've handled the event manually
+                    break;
+                }
+                default:
+                    print_setup_event(setup); // For debugging purposes
+                    break;
+            }
         }
+        default:
+            break;
     }
 
     return error;               
@@ -277,7 +304,7 @@ int main(void) {
     static const usb_string_descriptor_t product_name = {
         .bLength = sizeof(product_name),
         .bDescriptorType = USB_STRING_DESCRIPTOR,
-        .bString = L"Hello, World!",
+        .bString = L"HIDeous",
     };
 
     static const usb_string_descriptor_t *strings[] = { &product_name };
@@ -337,7 +364,7 @@ int main(void) {
                     .bEndpointAddress = USB_DEVICE_TO_HOST | 1,
                     .bmAttributes = USB_INTERRUPT_TRANSFER,
                     .wMaxPacketSize = 0x0008,
-                    .bInterval = 1,
+                    .bInterval = 10,
                 },
             },
         },
@@ -348,7 +375,7 @@ int main(void) {
     static const usb_device_descriptor_t device = {
         .bLength = sizeof(device),
         .bDescriptorType = USB_DEVICE_DESCRIPTOR, //1
-        .bcdUSB = 0x0200,
+        .bcdUSB = 0x0110,
         .bDeviceClass = 0,
         .bDeviceSubClass = 0,
         .bDeviceProtocol = 0,
